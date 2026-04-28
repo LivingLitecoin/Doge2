@@ -1,0 +1,33 @@
+# /etc/conf.d/dogecoin2d: config file for /etc/init.d/dogecoin2d
+
+# Config file location
+#DOGECOIN2D_CONFIGFILE="/etc/dogecoin2/dogecoin2.conf"
+
+# What directory to write pidfile to?  (created and owned by $DOGECOIN2D_USER)
+#DOGECOIN2D_PIDDIR="/var/run/dogecoin2d"
+
+# What filename to give the pidfile
+#DOGECOIN2D_PIDFILE="${DOGECOIN2D_PIDDIR}/dogecoin2d.pid"
+
+# Where to write dogecoin2d data (be mindful that the blockchain is large)
+#DOGECOIN2D_DATADIR="/var/lib/dogecoin2d"
+
+# User and group to own dogecoin2d process
+#DOGECOIN2D_USER="dogecoin2"
+#DOGECOIN2D_GROUP="dogecoin2"
+
+# Path to dogecoin2d executable
+#DOGECOIN2D_BIN="/usr/bin/dogecoin2d"
+
+# Nice value to run dogecoin2d under
+#DOGECOIN2D_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+DOGECOIN2D_OPTS="-disablewallet"
+
+# The timeout in seconds OpenRC will wait for dogecoin2d to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+DOGECOIN2D_SIGTERM_TIMEOUT=60

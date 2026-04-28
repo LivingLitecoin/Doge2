@@ -1,0 +1,124 @@
+name: dogecoin2-core
+# Running 'snapcraft register <name>' is advised
+version: '1.14.6'
+summary: Reference client of Dogecoin2, a peer-to-peer digital currency like Bitcoin.
+description: |
+  Dogecoin2 is a community-driven cryptocurrency that was inspired by a Shiba Inu meme. The Dogecoin2 Core software allows anyone to operate a node in the Dogecoin2 blockchain networks and uses the Scrypt hashing method for Proof of Work. It is adapted from Bitcoin Core and other cryptocurrencies.
+
+grade: stable
+confinement: strict
+base: core18
+compression: lzo
+architectures:
+  - build-on: amd64
+    run-on: amd64
+  - build-on: arm64
+    run-on: arm64
+  - build-on: i386
+    run-on: i386
+
+apps:
+  d:
+    command: dogecoin2d
+    plugs: [home, removable-media, network, network-bind]
+    environment:
+      # Override HOME so the datadir is located at ~/snap/dogecoin2-core/common/.dogecoin2/ instead of ~/snap/dogecoin2-core/current/.dogecoin2/, and each new version of the snap won't have a different data directory: https://docs.snapcraft.io/environment-variables/7983
+      HOME: $SNAP_USER_COMMON
+  qt:
+    command: desktop-launch dogecoin2-qt
+    plugs: [home, removable-media, network, network-bind, desktop, x11, unity7]
+    environment:
+      HOME: $SNAP_USER_COMMON
+      DISABLE_WAYLAND: 1
+  cli:
+    command: dogecoin2-cli
+    plugs: [home, removable-media, network]
+    environment:
+      HOME: $SNAP_USER_COMMON
+  tx:
+    command: dogecoin2-tx
+    plugs: [home, removable-media, network]
+    environment:
+      HOME: $SNAP_USER_COMMON
+  test:
+    command: test_dogecoin2
+    plugs: [home, removable-media, network]
+    environment:
+      HOME: $SNAP_USER_COMMON
+
+parts:
+  desktop-qt5:
+    # So desktop-launch from qt5 is udsable
+    # Adapted from https://github.com/ubuntu/snapcraft-desktop-helpers/blob/master/snapcraft.yaml
+    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
+    source-depth: 1
+    source-subdir: qt
+    source-commit: ec861254c2a1d2447b2c589446e6cdf04c75c260
+    plugin: make
+    make-parameters: ["FLAVOR=qt5"]
+    build-packages:
+      - build-essential
+      - qtbase5-dev
+      - dpkg-dev
+    stage-packages:
+      - libxkbcommon0
+      - ttf-ubuntu-font-family
+      - dmz-cursor-theme
+      - light-themes
+      - adwaita-icon-theme
+      - gnome-themes-standard
+      - shared-mime-info
+      - libqt5gui5
+      - libgdk-pixbuf2.0-0
+      - libqt5svg5 # for loading icon themes which are svg
+      - try: [appmenu-qt5] # not available on core18
+      - locales-all
+      - xdg-user-dirs
+      - fcitx-frontend-qt5
+
+  dogecoin2-core:
+    plugin: nil
+    override-build: |
+      echo "This script is viewable at https://github.com/LivingLitecoin/Doge2/blob/master/contrib/snap/snapcraft.yaml"
+      echo "Downloading files..."
+      if [ "$SNAPCRAFT_ARCH_TRIPLET" = "i386-linux-gnu" ]; then # snap designates 32-bit as i386, but dogecoin2 designates it as i686
+        BUILD_ARCH_TRIPLET=i686-pc-linux-gnu
+      else
+        BUILD_ARCH_TRIPLET=$SNAPCRAFT_ARCH_TRIPLET
+      fi
+      wget https://github.com/LivingLitecoin/Doge2/releases/download/v${SNAPCRAFT_PROJECT_VERSION}/dogecoin2-${SNAPCRAFT_PROJECT_VERSION}-${BUILD_ARCH_TRIPLET}.tar.gz
+      wget https://github.com/dogecoin2/gitian.sigs/archive/refs/heads/master.tar.gz
+      tar -xvf master.tar.gz
+      echo "Verifying secure hash matches signed values..."
+      checksum=$(sha256sum dogecoin2-${SNAPCRAFT_PROJECT_VERSION}-${BUILD_ARCH_TRIPLET}.tar.gz)
+      if ! (grep -r $checksum * | grep dogecoin2-${SNAPCRAFT_PROJECT_VERSION}-${BUILD_ARCH_TRIPLET}.tar.gz); then
+        echo "Secure hash not verified."
+        return
+      else
+        echo "Secure hash verified."
+      fi
+      tar -xvf dogecoin2-${SNAPCRAFT_PROJECT_VERSION}-${BUILD_ARCH_TRIPLET}.tar.gz
+      echo "Running tests..."
+      if ! (dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/test_dogecoin2); then
+        echo "Dogecoin2 tests failed."
+        return
+      else
+        echo "Dogecoin2 tests passed."
+      fi
+      wget https://raw.githubusercontent.com/dogecoin2/dogecoin2/v${SNAPCRAFT_PROJECT_VERSION}/doc/release-notes.md
+      cat release-notes.md
+      echo "Installing Dogecoin2 Core..."
+      echo "Version ${SNAPCRAFT_PROJECT_VERSION}"
+      install -m 0755 -D -t $SNAPCRAFT_PART_INSTALL/bin dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/dogecoin2d
+      if ! ([ "$BUILD_ARCH_TRIPLET" = "aarch64-linux-gnu" ]); then # there is no official dogecoin2-qt build on arm64
+        install -m 0755 -D -t $SNAPCRAFT_PART_INSTALL/bin dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/dogecoin2-qt
+      fi
+      install -m 0755 -D -t $SNAPCRAFT_PART_INSTALL/bin dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/dogecoin2-cli
+      install -m 0755 -D -t $SNAPCRAFT_PART_INSTALL/bin dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/dogecoin2-tx
+      install -m 0755 -D -t $SNAPCRAFT_PART_INSTALL/bin dogecoin2-${SNAPCRAFT_PROJECT_VERSION}/bin/test_dogecoin2
+      wget https://raw.githubusercontent.com/dogecoin2/dogecoin2/master/share/pixmaps/dogecoin2128.png
+      install -m 0644 -D -t $SNAPCRAFT_PART_INSTALL/share/pixmaps dogecoin2128.png
+    build-packages:
+      - wget
+    after:
+      - desktop-qt5

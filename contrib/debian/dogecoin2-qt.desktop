@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Dogecoin2 Core
+Comment=Connect to the Dogecoin2 P2P Network
+Comment[de]=Verbinde mit dem Dogecoin2 peer-to-peer Netzwerk
+Comment[fr]=Dogecoin2, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=Dogecoin2, eşten eşe kriptografik sanal para birimi
+Exec=dogecoin2-qt %u
+Terminal=false
+Type=Application
+Icon=dogecoin2128
+MimeType=x-scheme-handler/dogecoin2;
+Categories=Office;Finance;
